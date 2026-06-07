@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pro Aim Warmup</title>
+  <meta name="description" content="Pro Aim Warmup, nişan alma refleksini geliştirmek için hedef, flick ve takip modları olan hızlı bir aim ısınma oyunudur.">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Pro Aim Warmup">
+  <meta property="og:description" content="Hızlı hedef, temiz tıklama ve net ölçüm için aim ısınma oyunu.">
+  <meta property="og:type" content="website">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101114;
+      --panel: #181a1f;
+      --panel-2: #20232a;
+      --text: #f3f4f6;
+      --muted: #aeb4c0;
+      --line: #343842;
+      --accent: #4fd1c5;
+      --accent-2: #f59e0b;
+      --bad: #ef4444;
+      --good: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    button,
+    select,
+    input {
+      font: inherit;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 12px 14px;
+      background: rgba(24, 26, 31, 0.94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+      z-index: 2;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 34px;
+      height: 34px;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      position: relative;
+      flex: 0 0 auto;
+      box-shadow: 0 0 20px rgba(79, 209, 197, 0.22);
+    }
+
+    .mark::before,
+    .mark::after {
+      content: "";
+      position: absolute;
+      background: var(--accent);
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .mark::before {
+      width: 18px;
+      height: 2px;
+    }
+
+    .mark::after {
+      width: 2px;
+      height: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sub {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .control {
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 8px;
+      color: var(--text);
+    }
+
+    .control label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    select {
+      min-width: 92px;
+      border: 0;
+      outline: 0;
+      color: var(--text);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    button {
+      min-height: 38px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 14px;
+      color: #071311;
+      background: var(--accent);
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 120ms ease, filter 120ms ease;
+    }
+
+    button:hover {
+      filter: brightness(1.08);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .arena-wrap {
+      position: relative;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(79, 209, 197, 0.13), transparent 28%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%) 0 0 / 28px 28px,
+        #101114;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    .hud {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      top: 14px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(82px, 1fr));
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .stat {
+      min-height: 58px;
+      padding: 10px;
+      background: rgba(24, 26, 31, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.1;
+      text-transform: uppercase;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 6px;
+      font-size: clamp(18px, 3vw, 28px);
+      line-height: 1;
+    }
+
+    .center-card {
+      position: absolute;
+      left: 50%;
+      top: 54%;
+      width: min(460px, calc(100% - 28px));
+      transform: translate(-50%, -50%);
+      padding: 22px;
+      background: rgba(24, 26, 31, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      box-shadow: 0 20px 70px rgba(0, 0, 0, 0.42);
+      text-align: center;
+    }
+
+    .center-card[hidden] {
+      display: none;
+    }
+
+    .center-card h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .center-card p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 14px 0 18px;
+    }
+
+    .result-grid div {
+      padding: 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .result-grid span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .result-grid strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 21px;
+    }
+
+    .flash {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      margin: -10px 0 0 -10px;
+      border: 2px solid var(--good);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: pop 360ms ease-out forwards;
+    }
+
+    .flash.miss {
+      border-color: var(--bad);
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 1;
+        transform: scale(0.4);
+      }
+
+      to {
+        opacity: 0;
+        transform: scale(2.8);
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        justify-content: stretch;
+      }
+
+      .control,
+      button {
+        flex: 1 1 130px;
+        justify-content: center;
+      }
+
+      .arena-wrap {
+        min-height: 680px;
+      }
+
+      .hud {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <h1>Pro Aim Warmup</h1>
+        <div class="sub">Hızlı hedef, temiz tıklama, net ölçüm.</div>
+      </div>
+    </div>
+    <div class="controls" aria-label="Ayarlar">
+      <div class="control">
+        <label for="mode">Mod</label>
+        <select id="mode">
+          <option value="classic">Klasik</option>
+          <option value="flick">Flick</option>
+          <option value="tracking">Takip</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="duration">Süre</label>
+        <select id="duration">
+          <option value="30">30 sn</option>
+          <option value="45" selected>45 sn</option>
+          <option value="60">60 sn</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="size">Hedef</label>
+        <select id="size">
+          <option value="small">Küçük</option>
+          <option value="medium" selected>Orta</option>
+          <option value="large">Büyük</option>
+        </select>
+      </div>
+      <button id="start">Başlat</button>
+    </div>
+  </header>
+
+  <main class="arena-wrap" id="wrap">
+    <canvas id="arena" aria-label="Aim Warmup oyun alanı"></canvas>
+    <section class="hud" aria-label="Skor">
+      <div class="stat"><span>Süre</span><strong id="time">45.0</strong></div>
+      <div class="stat"><span>Puan</span><strong id="score">0</strong></div>
+      <div class="stat"><span>İsabet</span><strong id="hits">0</strong></div>
+      <div class="stat"><span>Kaçan</span><strong id="misses">0</strong></div>
+      <div class="stat"><span>Oran</span><strong id="accuracy">100%</strong></div>
+    </section>
+
+    <section class="center-card" id="panel">
+      <h2 id="panelTitle">Hazır mısın?</h2>
+      <p id="panelText">Odaklan, ritmi bul, temiz vuruşlar çıkar.</p>
+      <div class="result-grid" id="results" hidden>
+        <div><span>Puan</span><strong id="finalScore">0</strong></div>
+        <div><span>Oran</span><strong id="finalAccuracy">0%</strong></div>
+        <div><span>Ort. Tepki</span><strong id="finalReaction">0 ms</strong></div>
+      </div>
+      <button id="panelButton">Başlat</button>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("arena");
+    const ctx = canvas.getContext("2d");
+    const wrap = document.getElementById("wrap");
+    const modeSelect = document.getElementById("mode");
+    const durationSelect = document.getElementById("duration");
+    const sizeSelect = document.getElementById("size");
+    const startButton = document.getElementById("start");
+    const panel = document.getElementById("panel");
+    const panelButton = document.getElementById("panelButton");
+    const panelTitle = document.getElementById("panelTitle");
+    const panelText = document.getElementById("panelText");
+    const results = document.getElementById("results");
+    const hud = {
+      time: document.getElementById("time"),
+      score: document.getElementById("score"),
+      hits: document.getElementById("hits"),
+      misses: document.getElementById("misses"),
+      accuracy: document.getElementById("accuracy"),
+      finalScore: document.getElementById("finalScore"),
+      finalAccuracy: document.getElementById("finalAccuracy"),
+      finalReaction: document.getElementById("finalReaction")
+    };
+
+    const sizes = {
+      small: 20,
+      medium: 30,
+      large: 42
+    };
+
+    const state = {
+      running: false,
+      startedAt: 0,
+      duration: 45,
+      score: 0,
+      hits: 0,
+      misses: 0,
+      reactionTotal: 0,
+      targetBornAt: 0,
+      target: null,
+      particles: [],
+      lastFrame: 0
+    };
+
+    function resize() {
+      const rect = wrap.getBoundingClientRect();
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      canvas.style.width = rect.width + "px";
+      canvas.style.height = rect.height + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (state.target) {
+        state.target.x = Math.min(state.target.x, rect.width - state.target.r - 18);
+        state.target.y = Math.min(state.target.y, rect.height - state.target.r - 18);
+      }
+    }
+
+    function arenaSize() {
+      return {
+        width: canvas.clientWidth,
+        height: canvas.clientHeight
+      };
+    }
+
+    function randomTarget() {
+      const area = arenaSize();
+      const r = sizes[sizeSelect.value];
+      const hudBuffer = window.innerWidth < 760 ? 170 : 92;
+      const x = r + 18 + Math.random() * Math.max(1, area.width - r * 2 - 36);
+      const y = hudBuffer + r + Math.random() * Math.max(1, area.height - hudBuffer - r * 2 - 28);
+      const speed = modeSelect.value === "tracking" ? 110 + Math.random() * 80 : 0;
+      const angle = Math.random() * Math.PI * 2;
+      return {
+        x,
+        y,
+        r,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: modeSelect.value === "flick" ? "#f59e0b" : "#4fd1c5"
+      };
+    }
+
+    function spawnTarget() {
+      state.target = randomTarget();
+      state.targetBornAt = performance.now();
+    }
+
+    function startGame() {
+      state.running = true;
+      state.startedAt = performance.now();
+      state.duration = Number(durationSelect.value);
+      state.score = 0;
+      state.hits = 0;
+      state.misses = 0;
+      state.reactionTotal = 0;
+      state.particles = [];
+      panel.hidden = true;
+      spawnTarget();
+      updateHud();
+    }
+
+    function endGame() {
+      state.running = false;
+      state.target = null;
+      panel.hidden = false;
+      panelTitle.textContent = "Tur bitti";
+      panelText.textContent = "Kısa bir nefes, sonra bir tur daha.";
+      panelButton.textContent = "Tekrar Başlat";
+      results.hidden = false;
+      hud.finalScore.textContent = state.score;
+      hud.finalAccuracy.textContent = accuracyText();
+      hud.finalReaction.textContent = state.hits ? Math.round(state.reactionTotal / state.hits) + " ms" : "0 ms";
+    }
+
+    function timeLeft() {
+      if (!state.running) return state.duration;
+      return Math.max(0, state.duration - (performance.now() - state.startedAt) / 1000);
+    }
+
+    function accuracyText() {
+      const total = state.hits + state.misses;
+      if (!total) return "100%";
+      return Math.round((state.hits / total) * 100) + "%";
+    }
+
+    function updateHud() {
+      hud.time.textContent = timeLeft().toFixed(1);
+      hud.score.textContent = state.score;
+      hud.hits.textContent = state.hits;
+      hud.misses.textContent = state.misses;
+      hud.accuracy.textContent = accuracyText();
+    }
+
+    function addFlash(x, y, miss) {
+      const el = document.createElement("div");
+      el.className = "flash" + (miss ? " miss" : "");
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      wrap.appendChild(el);
+      window.setTimeout(() => el.remove(), 380);
+    }
+
+    function addParticles(x, y, color) {
+      for (let i = 0; i < 12; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = 70 + Math.random() * 160;
+        state.particles.push({
+          x,
+          y,
+          vx: Math.cos(a) * s,
+          vy: Math.sin(a) * s,
+          life: 0.45,
+          color
+        });
+      }
+    }
+
+    function handleShot(event) {
+      if (!state.running || !state.target) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const t = state.target;
+      const dist = Math.hypot(x - t.x, y - t.y);
+      if (dist <= t.r) {
+        const centerBonus = Math.round((1 - dist / t.r) * 60);
+        const modeBonus = modeSelect.value === "flick" ? 20 : 0;
+        state.score += 100 + centerBonus + modeBonus;
+        state.hits += 1;
+        state.reactionTotal += performance.now() - state.targetBornAt;
+        addFlash(x, y, false);
+        addParticles(t.x, t.y, t.color);
+        spawnTarget();
+      } else {
+        state.misses += 1;
+        state.score = Math.max(0, state.score - 20);
+        addFlash(x, y, true);
+      }
+      updateHud();
+    }
+
+    function drawGrid(width, height) {
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.045)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < width; x += 48) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += 48) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+    }
+
+    function moveTarget(dt) {
+      const t = state.target;
+      if (!t || modeSelect.value !== "tracking") return;
+      const area = arenaSize();
+      t.x += t.vx * dt;
+      t.y += t.vy * dt;
+      if (t.x < t.r + 10 || t.x > area.width - t.r - 10) t.vx *= -1;
+      if (t.y < t.r + 100 || t.y > area.height - t.r - 10) t.vy *= -1;
+      t.x = Math.max(t.r + 10, Math.min(area.width - t.r - 10, t.x));
+      t.y = Math.max(t.r + 100, Math.min(area.height - t.r - 10, t.y));
+    }
+
+    function drawTarget() {
+      const t = state.target;
+      if (!t) return;
+      const pulse = 1 + Math.sin(performance.now() / 130) * 0.035;
+      const r = t.r * pulse;
+      ctx.save();
+      ctx.translate(t.x, t.y);
+      ctx.shadowColor = t.color;
+      ctx.shadowBlur = 26;
+      ctx.fillStyle = t.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.58, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.88)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.72, 0);
+      ctx.lineTo(r * 0.72, 0);
+      ctx.moveTo(0, -r * 0.72);
+      ctx.lineTo(0, r * 0.72);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawParticles(dt) {
+      for (const p of state.particles) {
+        p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 160 * dt;
+      }
+      state.particles = state.particles.filter((p) => p.life > 0);
+      for (const p of state.particles) {
+        ctx.globalAlpha = Math.max(0, p.life / 0.45);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function frame(now) {
+      const dt = Math.min(0.032, (now - (state.lastFrame || now)) / 1000);
+      state.lastFrame = now;
+      const area = arenaSize();
+      ctx.clearRect(0, 0, area.width, area.height);
+      drawGrid(area.width, area.height);
+      moveTarget(dt);
+      drawTarget();
+      drawParticles(dt);
+      if (state.running) {
+        updateHud();
+        if (timeLeft() <= 0) endGame();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    startButton.addEventListener("click", startGame);
+    panelButton.addEventListener("click", startGame);
+    canvas.addEventListener("pointerdown", handleShot);
+    durationSelect.addEventListener("change", () => {
+      if (!state.running) {
+        state.duration = Number(durationSelect.value);
+        updateHud();
+      }
+    });
+
+    window.addEventListener("resize", resize);
+    resize();
+    updateHud();
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
